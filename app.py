@@ -70,6 +70,53 @@ crop_recommendation_model = pickle.load(
 
 
 # =========================================================================================
+# Custom functions for calculations
+
+
+def weather_fetch(city_name):
+    """
+    Fetch and returns the temperature and humidity of a city
+    :params: city_name
+    :return: temperature, humidity
+    """
+    api_key = config.weather_api_key
+    base_url = "http://api.openweathermap.org/data/2.5/weather?"
+
+    complete_url = base_url + "appid=" + api_key + "&q=" + city_name
+    response = requests.get(complete_url)
+    x = response.json()
+
+    if x["cod"] != "404":
+        y = x["main"]
+
+        temperature = round((y["temp"] - 273.15), 2)
+        humidity = y["humidity"]
+        return temperature, humidity
+    else:
+        return None
+
+
+def predict_image(img, model=disease_model):
+    """
+    Transforms image to tensor and predicts disease label
+    :params: image
+    :return: prediction (string)
+    """
+    transform = transforms.Compose([
+        transforms.Resize(256),
+        transforms.ToTensor(),
+    ])
+    image = Image.open(io.BytesIO(img))
+    img_t = transform(image)
+    img_u = torch.unsqueeze(img_t, 0)
+
+    # Get predictions from model
+    yb = model(img_u)
+    # Pick index with highest probability
+    _, preds = torch.max(yb, dim=1)
+    prediction = disease_classes[preds[0].item()]
+    # Retrieve the class label
+    return prediction
 
 
 
